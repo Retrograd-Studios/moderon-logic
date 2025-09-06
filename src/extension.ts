@@ -294,7 +294,6 @@ import internal = require('stream');
 import { stdin, stdout } from 'process';
 import { resolve } from 'path';
 import { rejects } from 'assert';
-import { EasyVisualScriptEditorProvider } from './evseditor/easyVisualScriptEditor';
 
 async function executeLsp(): Promise<boolean> {
 
@@ -436,7 +435,7 @@ async function executeLsp(): Promise<boolean> {
 
 }
 
- 
+
 class EEPLColorProvider implements vscode.DocumentColorProvider {
   provideColorPresentations(color: vscode.Color, 
     context: { readonly document: vscode.TextDocument; readonly range: vscode.Range; }, 
@@ -516,59 +515,9 @@ class EEPLColorProvider implements vscode.DocumentColorProvider {
   }
 
 }
- 
 
-import loadWasm, { FSNode } from './ecwasm/ecwasm';
 
 export function activate(context: vscode.ExtensionContext) {
-
-  async function run() {
-
-
-    // Initialize the module
-    const module = await loadWasm();
-
-
-    const ws = vscode.workspace.workspaceFolders![0];
-    console.log(`${ws.uri.fsPath}`);
-
-    // module.FS.mount(module.FS.filesystems.NODEFS, { root: ws.uri.fsPath }, '.');
-    module.FS.mkdir('vmt');
-    module.FS.mount(module.FS.filesystems.NODEFS, { root: ws.uri.fsPath }, '/vmt');
-
-    // module.FS_createDataFile()
-    
-    // Call functions using clean names from EmbindModule
-    module.sayHi();        // Calls the C++ sayHi function
-    const days = module.daysInWeek();  // Calls the C++ daysInWeek function
-    
-    console.log(`Days in a week: ${days}`); // Output: "Days in a week: 7"
-
-    const name = module.getName();
-    console.log(`Your name: ${name}`);
-
-    module.Parse("./vmt/test2.es");
-    console.log(`============`);
-    console.log(`============`);
-    console.log(`============`);
-    module.PrintCached("./vmt/test2.es");
-    console.log(`++++`);
-}
-
-run().catch(console.error);
-
-    
-
-    // MainModule.onRuntimeInitialized = () => {
-    //     const addWrapper = Module.cwrap(
-    //         'add',      // Name of the C function
-    //         'number',   // Return type
-    //         ['number', 'number'] // Argument types
-    //     );
-
-    //     const result = addWrapper(10, 7);
-    //     console.log(`Result of add via wrapper: ${result}`); // Output: 17
-    // };
 
 
   // context.subscriptions.push(
@@ -583,7 +532,7 @@ run().catch(console.error);
   // })();
 
 
-  let extation = vscode.extensions.getExtension("Retrograd-Studios.eec-ext");
+  let extation = vscode.extensions.getExtension("Retrograd-Studios.moderon-logic");
 
   console.log(extation);
 
@@ -718,7 +667,7 @@ run().catch(console.error);
   // //   }
   // // );
 
-  // let disposable = client.start();
+  let disposable = client.start();
   // context.subscriptions.push(disposable);
 
   //   this.languageClient.onReady().then(() => {
@@ -770,8 +719,6 @@ run().catch(console.error);
   //     }
 
   //   });
-
-  context.subscriptions.push(EasyVisualScriptEditorProvider.register(context));
 
 
   context.subscriptions.push(vscode.commands.registerCommand('eepl.command.progress', async config => {
