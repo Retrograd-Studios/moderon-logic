@@ -310,7 +310,7 @@ export async function installToolchain(toolchainInfo: ToolchainInfo): Promise<bo
                   totalSize = fsExtra.statSync(tmpFilePath.fsPath).size;
                   currentSize = 0;
 
-                  const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: Buffer) => {
+                  const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: string | Buffer<ArrayBufferLike>) => {
                     const buffer = chunk as Buffer;
                     currentSize += buffer.length;
                   }).on('error', (err: Error) => {
@@ -415,7 +415,7 @@ export async function installToolchain(toolchainInfo: ToolchainInfo): Promise<bo
 
         totalSize = fsExtra.statSync(tmpFilePath.fsPath).size;
 
-        const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: Buffer) => {
+        const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: string | Buffer<ArrayBufferLike>) => {
           const buffer = chunk as Buffer;
           currentSize += buffer.length;
         }).on('error', (err: Error) => {

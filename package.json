@@ -1,8 +1,8 @@
 {
-    "name": "moderon-logic",
-    "displayName": "Moderon Logic",
+    "name": "eec-ext",
+    "displayName": "EEPL",
     "description": "EEPL (Easy Embedded sytems Programming Language) Support, Compiler, Debugger, Simulator, Flasher and code browsing.",
-    "version": "0.9.10",
+    "version": "0.9.11",
     "icon": "icon.png",
     "repository": {
         "url": "https://github.com/Retrograd-Studios/moderon-logic.git",
@@ -14,6 +14,7 @@
     },
     "keywords": [
         "eepl",
+        "eec",
         "eemblang",
         "vscode-eemblang",
         "vscode-eepl",
@@ -43,31 +44,35 @@
         "pretest": "npm run compile-tests && npm run compile && npm run lint",
         "lint": "eslint src --ext ts",
         "test": "node ./out/test/runTest.js",
-        "vscode-debugadapter": "1.38.0-pre.4"
+        "vscode-debugadapter": "1.38.0-pre.4",
+        "svelte-build": "rollup -c --bundleConfigAsCjs",
+        "svelte-dev": "rollup -c -w",
+        "start": "sirv public --no-clear"
     },
     "devDependencies": {
         "@types/fs-extra": "^11.0.4",
         "@types/glob": "^8.0.0",
-        "@types/mocha": "^10.0.0",
-        "@types/node": "16.x",
+        "@types/mocha": "10.0.10",
+        "@types/node": "24.0.13",
         "@types/unzip-stream": "^0.3.4",
-        "@types/vscode": "^1.72.0",
-        "@typescript-eslint/eslint-plugin": "^5.38.1",
-        "@typescript-eslint/parser": "^5.38.1",
-        "@vscode/test-electron": "^2.1.5",
-        "eslint": "^8.24.0",
-        "glob": "^8.0.3",
-        "http-proxy-agent": "^2.1.0",
-        "https-proxy-agent": "^2.2.4",
-        "mkdirp": "^1.0.3",
-        "mocha": "^10.0.0",
-        "tmp": "0.2.1",
-        "ts-loader": "^9.4.1",
-        "typescript": "^4.8.4",
-        "vscode-debugadapter-testsupport": "1.37.0",
-        "webpack": "^5.74.0",
-        "webpack-cli": "^4.10.0",
-        "yauzl": "^2.10.0"
+        "@types/vscode": "1.102.0",
+        "@typescript-eslint/eslint-plugin": "8.36.0",
+        "@typescript-eslint/parser": "8.36.0",
+        "@vscode/debugadapter-testsupport": "1.68.0",
+        "@vscode/test-electron": "2.5.2",
+        "copy-webpack-plugin": "^13.0.0",
+        "eslint": "9.31.0",
+        "glob": "11.0.3",
+        "http-proxy-agent": "7.0.2",
+        "https-proxy-agent": "7.0.6",
+        "mkdirp": "3.0.1",
+        "mocha": "11.7.1",
+        "tmp": "0.2.3",
+        "ts-loader": "9.5.2",
+        "typescript": "5.8.3",
+        "webpack": "5.100.0",
+        "webpack-cli": "6.0.1",
+        "yauzl": "3.2.0"
     },
     "contributes": {
         "languages": [
@@ -76,24 +81,26 @@
                 "aliases": [
                     "EEPL",
                     "eepl",
+                    "VEPL",
                     "EEmbLang",
                     "eemblang",
                     "EasyEmbLang",
                     "EasyLang"
                 ],
                 "extensions": [
-                    ".es"
+                    ".es2",
+                    ".evs"
                 ],
                 "configuration": "./language-configuration.json"
             }
         ],
         "customEditors": [
             {
-                "viewType": "vscode-eemblang.tableEditor",
-                "displayName": "Modbus editor",
+                "viewType": "eec-ext.evs",
+                "displayName": "Easy Visual Script Editor",
                 "selector": [
                     {
-                        "filenamePattern": "*.jsmbt"
+                        "filenamePattern": "*.evs"
                     }
                 ],
                 "priority": "default"
@@ -585,10 +592,11 @@
         ]
     },
     "dependencies": {
-        "fs-extra": "^11.2.0",
+        "@vscode/vsce": "3.6.0",
+        "fs-extra": "11.3.0",
         "node-fetch": "^3.3.0",
+        "sirv-cli": "3.0.1",
         "unzip-stream": "^0.3.4",
-        "@vscode/vsce": "^3.2.1",
         "vscode-languageclient": "^9.0.1"
     }
 }

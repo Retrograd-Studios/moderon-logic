@@ -5,6 +5,16 @@
 	"tasks": [
 		{
 			"type": "npm",
+			"script": "svelte-build",
+			"label": "svelte-build"
+		},
+		{
+			"type": "npm",
+			"script": "svelte-dev",
+			"label": "svelte-build-dev"
+		},
+		{
+			"type": "npm",
 			"script": "watch",
 			"problemMatcher": "$ts-webpack-watch",
 			"isBackground": true,

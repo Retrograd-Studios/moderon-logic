@@ -102,7 +102,7 @@ export function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export type EasyDocument = vscode.TextDocument & { languageId: "eemblang" };
+export type EasyDocument = vscode.TextDocument & { languageId: "eepl" };
 export type EasyEditor = vscode.TextEditor & { document: EasyDocument };
 
 export function isEasyDocument(document: vscode.TextDocument): document is EasyDocument {
@@ -110,12 +110,7 @@ export function isEasyDocument(document: vscode.TextDocument): document is EasyD
     // by allowing only `file` schemes
     // unfortunately extensions that use diff views not always set this
     // to something different than 'file' (see ongoing bug: #4608)
-    return document.languageId === "eemblang" && document.uri.scheme === "file";
-}
-
-export function isCargoTomlDocument(document: vscode.TextDocument): document is EasyDocument {
-    // ideally `document.languageId` should be 'toml' but user maybe not have toml extension installed
-    return document.uri.scheme === "file" && document.fileName.endsWith("Cargo.toml");
+    return document.languageId === "eepl" && document.uri.scheme === "file";
 }
 
 export function isEasyEditor(editor: vscode.TextEditor): editor is EasyEditor {
