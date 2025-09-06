@@ -1,6 +1,6 @@
 {
     "name": "eec-ext",
-    "displayName": "EEPL",
+    "displayName": "EEPL v2",
     "description": "EEPL (Easy Embedded sytems Programming Language) Support, Compiler, Debugger, Simulator, Flasher and code browsing.",
     "version": "0.9.11",
     "icon": "icon.png",
