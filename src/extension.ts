@@ -667,7 +667,7 @@ export function activate(context: vscode.ExtensionContext) {
   // //   }
   // // );
 
-  let disposable = client.start();
+  // let disposable = client.start();
   // context.subscriptions.push(disposable);
 
   //   this.languageClient.onReady().then(() => {
