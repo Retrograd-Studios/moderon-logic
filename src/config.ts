@@ -3,7 +3,7 @@ import * as os from "os";
 import * as vscode from "vscode";
 //import { Env } from "./client";
 //import { log } from "./util";
-import { TargetInfo } from "./toolchain";
+import { TargetInfo, targetInfoDefaultValue, ToolchainInfo } from "./toolchain";
 
 
 // export type RunnableEnvCfg =
@@ -18,30 +18,9 @@ export class Config {
     readonly extensionId = "Retrograd-Studios.moderon-logic";
     configureLang: vscode.Disposable | undefined;
 
-    targetDevice: TargetInfo = {
-        description: "[Device]",
-        devManId: 0,
-        devName: "Select Target",
-        frameWorkVerA: 0,
-        frameWorkVerB: 22,
-        triplet: "thumbv7m-none-none-eabi",
-        pathToFile: "",
-        periphInfo: {
-            aoCount: 3,
-            relayCount: 6,
-            uartCount: 8,
-            uiCount: 11,
-            flashSize: 256 * 1024,
-            ramSize: 64 * 1024,
-            flashPageSize: 256,
-            isDesktop: false,
-            isResourcesInternal: false
-        },
-        stdlib: "armv7m",
-        runtime: "clang_rt.builtins-armv7m",
-        stdlibs: [],
-        includePaths: []
-    };
+    targetDevice: TargetInfo = targetInfoDefaultValue;
+    currentToolchain: ToolchainInfo | undefined = undefined;
+    latestToolchain: ToolchainInfo | undefined = undefined;
 
     productPath: string = "./out/output";
     exePath: string = "./out/output";
@@ -49,6 +28,9 @@ export class Config {
     productName: string = "output";
 
     hostTriplet: string = "x64-win";
+
+    isOldToolchain: boolean = false;
+    isInternalLinker: boolean = false;
 
     readonly rootSection = "eepl";
     // config: {

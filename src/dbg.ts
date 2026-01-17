@@ -75,7 +75,7 @@ export async function runDebug(config: Config, isSimulator: boolean) {
     }
   }
 
-  await toolchain.resoleProductPaths(config);
+  await toolchain.resolveTarget(config);
 
 
   let extName = "marus25.cortex-debug";

@@ -437,25 +437,25 @@ async function executeLsp(): Promise<boolean> {
 
 
 class EEPLColorProvider implements vscode.DocumentColorProvider {
-  provideColorPresentations(color: vscode.Color, 
-    context: { readonly document: vscode.TextDocument; readonly range: vscode.Range; }, 
+  provideColorPresentations(color: vscode.Color,
+    context: { readonly document: vscode.TextDocument; readonly range: vscode.Range; },
     token: vscode.CancellationToken): vscode.ProviderResult<vscode.ColorPresentation[]> {
 
-      const clR =  255 * color.red;
-      const clG =  255 * color.green;
-      const clB =  255 * color.blue;
+    const clR = 255 * color.red;
+    const clG = 255 * color.green;
+    const clB = 255 * color.blue;
 
-      const result: vscode.ColorPresentation[] = [
+    const result: vscode.ColorPresentation[] = [
 
-        {
-          label: `GET_COLOR(${clR}, ${clG}, ${clB})`
-        }
+      {
+        label: `GET_COLOR(${clR}, ${clG}, ${clB})`
+      }
 
-      ];
+    ];
 
 
 
-      return result;
+    return result;
   }
 
 
@@ -477,7 +477,7 @@ class EEPLColorProvider implements vscode.DocumentColorProvider {
         let isMatching = true;
         while (isMatching) {
 
-          const regex : RegExp = /(GET_COLOR)\s*\(\s*((?:0x)?[0-9,a-f,A-F]+)\s*,\s*((?:0x)?[0-9,a-f,A-F]+)\s*,\s*((?:0x)?[0-9,a-f,A-F]+)\s*\)/;
+          const regex: RegExp = /(GET_COLOR)\s*\(\s*((?:0x)?[0-9,a-f,A-F]+)\s*,\s*((?:0x)?[0-9,a-f,A-F]+)\s*,\s*((?:0x)?[0-9,a-f,A-F]+)\s*\)/;
           // const word = document.getWordRangeAtPosition(line.range.start, regex);
           const words = regex.exec(text);
           if (words === null) {
@@ -485,18 +485,18 @@ class EEPLColorProvider implements vscode.DocumentColorProvider {
             continue;
           }
 
-          const clR =  1.0 / 255 * Number.parseInt(words[2]);
-          const clG =  1.0 / 255 * Number.parseInt(words[3]);
-          const clB =  1.0 / 255 * Number.parseInt(words[4]);
+          const clR = 1.0 / 255 * Number.parseInt(words[2]);
+          const clG = 1.0 / 255 * Number.parseInt(words[3]);
+          const clB = 1.0 / 255 * Number.parseInt(words[4]);
 
           const endIndex = text.indexOf(")", words.index) + 1;
-          
+
           range = range.with(
             range.start.translate(0, words.index),
             range.end.with(undefined, range.start.character + endIndex)
           );
 
-          result.push( { range: range, color: { red: clR, green: clG, blue: clB, alpha: 1.0 } } );
+          result.push({ range: range, color: { red: clR, green: clG, blue: clB, alpha: 1.0 } });
 
           range = range.with(
             range.end,
@@ -506,7 +506,7 @@ class EEPLColorProvider implements vscode.DocumentColorProvider {
           text = text.substring(endIndex);
 
         }
-        
+
 
       }
 
@@ -519,19 +519,6 @@ class EEPLColorProvider implements vscode.DocumentColorProvider {
 
 export function activate(context: vscode.ExtensionContext) {
 
-
-  // context.subscriptions.push(
-  //   vscode.languages.registerColorProvider(
-  //   { scheme: 'file', language: 'eepl' }, new EEPLColorProvider()));
-
-
-  //console.log("Hello, World!");
-
-  // (async () => {
-  //   EFlasherClient.getPortList();
-  // })();
-
-
   let extation = vscode.extensions.getExtension("Retrograd-Studios.moderon-logic");
 
   console.log(extation);
@@ -543,6 +530,8 @@ export function activate(context: vscode.ExtensionContext) {
     config.hostTriplet = `${os.arch()}-${os.platform()}`;
   }
 
+  console.log(`os.platform: ${os.platform().toString()}`);
+  console.log(`os.arch: ${os.arch()}`);
   console.log(`triplet: ${config.hostTriplet}`);
 
   const supportedTriplet = ['x64-windows', 'x64-linux'];
@@ -679,46 +668,65 @@ export function activate(context: vscode.ExtensionContext) {
   // }
 
 
+  let sbSelectTargetDev: vscode.StatusBarItem;
+  sbSelectTargetDev = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+  sbSelectTargetDev.command = 'eepl.command.setTargetDevice';
+  context.subscriptions.push(sbSelectTargetDev);
+  sbSelectTargetDev.text = "$(chip) Select Target";
+  sbSelectTargetDev.tooltip = "Select target Device/Platform";
+  sbSelectTargetDev.show();
+  toolchain.checkAndSetCurrentTarget(config, sbSelectTargetDev);
+
+  //const currentToolchain = await toolchain.getCurrentToolchain(); //config.get<string>('toolchain.version');
+  let sbSelectToolchain: vscode.StatusBarItem;
+  sbSelectToolchain = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 2);
+  sbSelectToolchain.command = 'eepl.command.setToolchain';
+  context.subscriptions.push(sbSelectToolchain);
+  sbSelectToolchain.text = `$(extensions)`;
+  sbSelectToolchain.tooltip = "Select toolchain";
+  sbSelectToolchain.show();
+
+  let sbSelectBuildPreset: vscode.StatusBarItem;
+  sbSelectBuildPreset = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+  sbSelectBuildPreset.command = 'eepl.command.setBuildPreset';
+  context.subscriptions.push(sbSelectBuildPreset);
+  sbSelectBuildPreset.text = config.get<string>('build.presets');
+  sbSelectBuildPreset.tooltip = "Select build preset";
+  sbSelectBuildPreset.show();
+
+  let sbOpenSettings: vscode.StatusBarItem;
+  sbOpenSettings = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 3);
+  sbOpenSettings.command = 'eepl.command.settings';
+  context.subscriptions.push(sbOpenSettings);
+  sbOpenSettings.text = '$(settings-gear)'
+  sbOpenSettings.tooltip = "Open extension settings";
+  sbOpenSettings.show();
 
 
-  // (async () => {
-  //   const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
-  //   const exePath = vscode.Uri.joinPath(
-  //   vscode.Uri.file(homeDir), ".eec", "bin", "eec.exe");
+  // let sbClearCache: vscode.StatusBarItem;
+  // sbClearCache = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+  // sbClearCache.command = 'eepl.command.clearCache';
+  // context.subscriptions.push(sbSelectToolchain);
+  // sbClearCache.text = "$(terminal-kill)";
+  // sbClearCache.tooltip = "Clear cache";
+  // sbClearCache.show();
 
-  //   let task = new vscode.Task(
-  //     { type: 'eec', task: 'compile' },
-  //     vscode.TaskScope.Workspace,
-  //     'compile',
-  //     '34teepl',
-  //     new vscode.ProcessExecution(exePath.fsPath, [])
-  //   );
-
-  //   await vscode.tasks.executeTask(task);
-  // })();
-
-
-
-  //checkToolchain();
-  //installToolchain();
+  let sbDropDebugger: vscode.StatusBarItem;
+  sbDropDebugger = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+  sbDropDebugger.command = 'eepl.command.dropDebugger';
+  context.subscriptions.push(sbDropDebugger);
+  sbDropDebugger.text = "[$(debug)$(close-all)]";
+  sbDropDebugger.tooltip = "Drop Debugger and GDB Server";
+  sbDropDebugger.hide();
 
 
-  //   vscode.window.withProgress({
-  //     location: vscode.ProgressLocation.Notification,
-  //     title: "Downloading...",
-  //     cancellable: true
-  // }, async (progress, token) => {
-  //     token.onCancellationRequested(() => {
-  //         console.log("User canceled the long running operation");
-  //     });
-  //     progress.report({message: "Download...", increment: 0});
+  (async () => {
+    toolchain.checkAndSetCurrentToolchain(config, sbSelectToolchain);
+  })();
 
-  //     for (var _i = 0; _i < 100; _i++) {
-  //       await new Promise(f => setTimeout(f, 100));
-  //       progress.report({message: "Download...()", increment: _i});
-  //     }
-
-  //   });
+  (async () => {
+    checkPackages(config);
+  })();
 
 
   context.subscriptions.push(vscode.commands.registerCommand('eepl.command.progress', async config => {
@@ -777,8 +785,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
 
-
-
   vscode.debug.onDidStartDebugSession((e) => {
     console.log(e);
     //checkDepencies();
@@ -790,42 +796,60 @@ export function activate(context: vscode.ExtensionContext) {
     console.log(e.execution.task.name);
     const tsk: tasks.EasyTaskDefinition = (e.execution.task.definition as tasks.EasyTaskDefinition);
 
-    if (tsk as tasks.EasyTaskDefinition) {
-      if (tsk.command == "build" && e.exitCode == 0) {
-        const task = await createTask(2, config);
-        const exec = await vscode.tasks.executeTask(task);
-      }
-      else if (tsk.command == "link" && e.exitCode == 0) {
+    if (!(tsk as tasks.EasyTaskDefinition)) {
+      return;
+    }
 
-        if (!config.targetDevice.periphInfo.isDesktop) {
+    if (e.exitCode != 0) {
+      EEPL_stackOfCommands = [];
+      return;
+    }
 
-          const task = await createTask(3, config);
-          const exec = await vscode.tasks.executeTask(task);
+    if (tsk.command == "build") {
 
-        } else {
+      if (config.isInternalLinker) {
 
-
-
-          EEPL_isBuildFailed = false;
-          const cmd = EEPL_stackOfCommands.pop();
-          if (cmd) {
-            vscode.commands.executeCommand(cmd);
-          } else {
-            vscode.window.showInformationMessage(`The App '${config.exePath}' has been successfully compiled`);
-          }
-
-        }
-
-      } else if (tsk.command == "ebuild" && e.exitCode == 0) {
         EEPL_isBuildFailed = false;
         const cmd = EEPL_stackOfCommands.pop();
         if (cmd) {
           vscode.commands.executeCommand(cmd);
+          return;
         }
-      } else if (e.exitCode != 0) {
-        if (EEPL_stackOfCommands.length) {
-          EEPL_stackOfCommands = [];
+
+        if (config.targetDevice.periphInfo.isDesktop) {
+          vscode.window.showInformationMessage(`The App '${config.exePath}' has been successfully compiled`);
         }
+
+        return;
+      }
+
+      const task = await createTask(tasks.EasyTaskId.Link, config);
+      if (task !== undefined) {
+        const exec = await vscode.tasks.executeTask(task);
+      }
+
+    } else if (tsk.command == "link") {
+
+      if (!config.targetDevice.periphInfo.isDesktop) {
+        const task = await createTask(tasks.EasyTaskId.EBuild, config);
+        if (task !== undefined) {
+          const exec = await vscode.tasks.executeTask(task);
+        }
+      } else {
+        EEPL_isBuildFailed = false;
+        const cmd = EEPL_stackOfCommands.pop();
+        if (cmd) {
+          vscode.commands.executeCommand(cmd);
+        } else {
+          vscode.window.showInformationMessage(`The App '${config.exePath}' has been successfully compiled`);
+        }
+      }
+
+    } else if (tsk.command == "ebuild") {
+      EEPL_isBuildFailed = false;
+      const cmd = EEPL_stackOfCommands.pop();
+      if (cmd) {
+        vscode.commands.executeCommand(cmd);
       }
     }
 
@@ -865,21 +889,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(activateTaskProvider(config));
 
-  // context.subscriptions.push(vscode.commands.registerCommand('extension.vscode-eemblang.getProgramName', () => {
-  //   return vscode.window.showInputBox({
-  //     placeHolder: 'Please enter the name of a source file in the workspace folder',
-  //     value: 'source.es'
-  //   });
-  // }));
-
-
-
-  context.subscriptions.push(vscode.commands.registerCommand('eepl.command.installToolchain', async () => {
-
-    toolchain.checkToolchain(config);
-
-  }));
-
 
   context.subscriptions.push(vscode.commands.registerCommand('eepl.command.compileProject', async () => {
 
@@ -897,7 +906,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     EEPL_isReqRebuild = false;
 
-    const task = await createTask(0, config).catch(() => { });
+    const task = await createTask(tasks.EasyTaskId.Build, config).catch(() => { });
     if (!task) {
       return;
     }
@@ -926,7 +935,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const task = await createTask(1, config).catch(() => { });
+    const task = await createTask(tasks.EasyTaskId.Simulate, config).catch(() => { });
     if (!task) {
       return;
     }
@@ -993,7 +1002,7 @@ export function activate(context: vscode.ExtensionContext) {
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('eepl.command.openFlasher', async () => {
-    const task = await createTask(4, config).catch(() => { });
+    const task = await createTask(tasks.EasyTaskId.Flush, config).catch(() => { });
     if (!task) {
       return;
     }
@@ -1127,61 +1136,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   }));
 
-
-
-
-  //const devName = config.get<string>('target.device');
-  //const devName: string = vscode.workspace.getConfiguration("eepl").get('target.device');
-  let sbSelectTargetDev: vscode.StatusBarItem;
-  sbSelectTargetDev = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-  sbSelectTargetDev.command = 'eepl.command.setTargetDevice';
-  context.subscriptions.push(sbSelectTargetDev);
-  sbSelectTargetDev.text = "$(chip) Select Target";
-  sbSelectTargetDev.tooltip = "Select target Device/Platform";
-  sbSelectTargetDev.show();
-  toolchain.checkAndSetCurrentTarget(config, sbSelectTargetDev);
-
-  //const currentToolchain = await toolchain.getCurrentToolchain(); //config.get<string>('toolchain.version');
-  let sbSelectToolchain: vscode.StatusBarItem;
-  sbSelectToolchain = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 2);
-  sbSelectToolchain.command = 'eepl.command.setToolchain';
-  context.subscriptions.push(sbSelectToolchain);
-  sbSelectToolchain.text = `$(extensions)`;
-  sbSelectToolchain.tooltip = "Select toolchain";
-  sbSelectToolchain.show();
-
-  let sbSelectBuildPreset: vscode.StatusBarItem;
-  sbSelectBuildPreset = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-  sbSelectBuildPreset.command = 'eepl.command.setBuildPreset';
-  context.subscriptions.push(sbSelectBuildPreset);
-  sbSelectBuildPreset.text = config.get<string>('build.presets');
-  sbSelectBuildPreset.tooltip = "Select build preset";
-  sbSelectBuildPreset.show();
-
-  let sbOpenSettings: vscode.StatusBarItem;
-  sbOpenSettings = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 3);
-  sbOpenSettings.command = 'eepl.command.settings';
-  context.subscriptions.push(sbOpenSettings);
-  sbOpenSettings.text = '$(settings-gear)'
-  sbOpenSettings.tooltip = "Open extension settings";
-  sbOpenSettings.show();
-
-
-  // let sbClearCache: vscode.StatusBarItem;
-  // sbClearCache = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-  // sbClearCache.command = 'eepl.command.clearCache';
-  // context.subscriptions.push(sbSelectToolchain);
-  // sbClearCache.text = "$(terminal-kill)";
-  // sbClearCache.tooltip = "Clear cache";
-  // sbClearCache.show();
-
-  let sbDropDebugger: vscode.StatusBarItem;
-  sbDropDebugger = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-  sbDropDebugger.command = 'eepl.command.dropDebugger';
-  context.subscriptions.push(sbSelectToolchain);
-  sbDropDebugger.text = "[$(debug)$(close-all)]";
-  sbDropDebugger.tooltip = "Drop Debugger and GDB Server";
-
+  context.subscriptions.push(vscode.commands.registerCommand('eepl.command.installToolchain', async () => {
+    toolchain.checkAndSetCurrentToolchain(config, sbSelectToolchain);
+  }));
 
 
   vscode.debug.onDidStartDebugSession((e) => {
@@ -1193,12 +1150,7 @@ export function activate(context: vscode.ExtensionContext) {
     eGdbServer.dropGdbServer();
   });
 
-
-
-
-
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
-
 
     if (e.affectsConfiguration('eepl.target.device')) {
       EEPL_isReqRebuild = true;
@@ -1210,7 +1162,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     if (e.affectsConfiguration('eepl.toolchain.version')) {
       EEPL_isReqRebuild = true;
-      toolchain.checkAndSetCurrentToolchain(config, sbSelectToolchain);
+      if (config.currentToolchain != config.get<toolchain.ToolchainInfo>("target.version")) {
+        toolchain.checkAndSetCurrentToolchain(config, sbSelectToolchain);
+      }
     }
 
     if (e.affectsConfiguration('eepl.build')) {
@@ -1221,23 +1175,7 @@ export function activate(context: vscode.ExtensionContext) {
         config.set('build.presets', 'Custom');
       }
     }
-
-
   }));
-
-
-
-
-
-  (async () => {
-
-    await toolchain.checkToolchain(config);
-    let currentToolchain = await toolchain.getCurrentToolchain();
-    toolchain.checkAndSetCurrentToolchain(config, sbSelectToolchain);
-
-  })();
-
-
 
   vscode.commands.registerCommand('eepl.command.clearCache', async () => {
 
@@ -1261,32 +1199,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     const prevDev = config.targetDevice; //.get<string>('target.device');
 
-    const targets = await toolchain.getTargets();
+    const targets = await toolchain.getTargets(config);
 
     targets.forEach(element => {
       const isPicked = (prevDev.description == element.description);
-      const pickItem = isPicked ? '$(pass-filled)' : '$(circle-large-outline)';// '$(check)' : ' ';
-
-      // let platformIcon = '$(device-mobile)';
-
-      // if (element.periphInfo.isDesktop) {
-      //   if (element.devName.indexOf('windows') != -1) {
-      //     platformIcon = '$(vm)'
-      //   } else if (element.devName.indexOf('linux') != -1) {
-      //     platformIcon = '$(vm)'
-      //   }
-      // }
-
-      // let deviceIcon = '$(device-mobile)';
-
-      // if (element.periphInfo.isDesktop) {
-      //   if (element.devName.indexOf('windows') != -1 ) {
-      //     deviceIcon = '$(terminal-powershell)'
-      //   } else if (element.devName.indexOf('linux') != -1) {
-      //     deviceIcon = '$(terminal-linux)'
-      //   }
-      // }
-
+      const pickItem = isPicked ? '$(pass-filled)' : '$(circle-large-outline)';
 
       let deviceIcon = '$(device-mobile)';
 
@@ -1334,8 +1251,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     let pickTargets: any[] = [];
 
-    //const prevVers = config.get<string>('toolchain.version');
-    const currentToolchain = await toolchain.getCurrentToolchain();
+    const currentToolchain = config.currentToolchain;
 
     const toolchains = await toolchain.getToolchains(config);
 
@@ -1367,25 +1283,14 @@ export function activate(context: vscode.ExtensionContext) {
         ".eec-tmp"
       );
 
-
-
       await vscode.workspace.fs.readDirectory(tmpDir).then((files) => {
         files.forEach(element => {
 
           console.log("file: ", element[0]);
 
-          if (element[1] != vscode.FileType.File || element[0].lastIndexOf(".json") == -1 || element[0].lastIndexOf("ToolchainInfo.") == -1) { //element[0].split('.').length < 3) {
-            //console.log("is not toolchain");
+          if (element[1] != vscode.FileType.File || element[0].lastIndexOf(".json") == -1 || element[0].lastIndexOf("ToolchainInfo.") == -1) {
             return;
           }
-
-          // const toolchainInfo: toolchain.ToolchainInfo = {
-          //   label: element[0],
-          //   file: element[0].substring(0, element[0].lastIndexOf(".zip")),
-          //   description: '',
-          //   ver: 'unknown',
-          //   url: ''
-          // };
 
           const rowFile = fs.readFileSync(vscode.Uri.joinPath(tmpDir, element[0]).fsPath).toString();
           const toolchainInfo: toolchain.ToolchainInfo = JSON.parse(rowFile);
@@ -1414,26 +1319,10 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     if (target) {
-      const isInstalled = await toolchain.installToolchain(target.toolchain);
-      // if (isInstalled)
-      // {
-      //   config.set("toolchain.version", await toolchain.getCurrentToolchain());
-      // }
+      await toolchain.installToolchain(config, target.toolchain);
     }
 
   });
-
-
-
-
-
-  // let myStatusBarItem: vscode.StatusBarItem;
-  // myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-  // myStatusBarItem.command = 'vscode-eemblang.runSimulator';
-  // context.subscriptions.push(myStatusBarItem);
-  // myStatusBarItem.text = `$(run)`;
-  // myStatusBarItem.tooltip = "Run Simulator";
-  // myStatusBarItem.show();
 
 
   vscode.commands.registerCommand('eepl.command.createNewProject', async () => {
@@ -1444,84 +1333,8 @@ export function activate(context: vscode.ExtensionContext) {
     selectExamples(config);
   });
 
-
-
-  (async () => {
-    checkPackages();
-  })();
-
-
   const provider = new EasyConfigurationProvider();
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('eembdbg', provider));
-
-
-  //context.subscriptions.push(TableEditorProvider.register(context));
-
-
-
-
-  // let factory = new InlineDebugAdapterFactory();
-  // context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('eembdbg', factory));
-  // if ('dispose' in factory) {
-  // 	context.subscriptions.push(factory);
-  // }
-
-  //   console.log("HW");
-
-  //   let ws =  vscode.workspace.workspaceFolders;
-
-  //   let valPath = "./";
-  //   ws!.forEach(function (value) {
-  //     valPath = value.uri.fsPath;
-  //     console.log(value);
-  //     console.log(value.uri.path);
-  //   }); 
-
-
-  //   console.log("___");
-
-  //   let fName = path.join(valPath, 'file.json');
-  //   let fName2 = path.join(valPath, 'file2.json');
-  //   console.log(fName);
-
-  //   const fileContents = fs.readFileSync(
-  //     fName,
-  //     {
-  //       encoding: 'utf-8',
-  //     },
-  //   );
-
-  //   console.log(fileContents);
-
-  //   fs.writeFileSync(fName2, fileContents);
-
-  //   console.log(os.platform());
-
-  //   console.log(os.cpus());
-
-  //   console.log(os.arch());
-
-  //   console.log(os.homedir());
-
-  //   console.log(os.hostname());
-
-  //   console.log(os.version());
-
-  //   console.log(os.userInfo());
-
-  //   console.log(os.tmpdir());
-
-  //   console.log(os.totalmem());
-
-
-
-
-  // //writeFile('./file.json', content);
-
-  //   //console.log("0)" + vscode.workspace.workspaceFolders![1].name);
-  //   console.log("1)" + vscode.workspace.workspaceFile);
-
-  //  downloadFile0("https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif", `${valPath}/giphy.gif`);
 
 }
 

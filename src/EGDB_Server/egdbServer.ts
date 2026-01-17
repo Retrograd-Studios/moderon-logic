@@ -58,7 +58,7 @@ export class EGDBServer {
             return false;
         }
 
-        await toolchain.resoleProductPaths(this.config);
+        await toolchain.resolveTarget(this.config);
 
         this.isBusy = true;
 
