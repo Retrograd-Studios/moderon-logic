@@ -298,7 +298,7 @@ async function installStdLibs(config: Config, targetDevice: TargetInfo): Promise
                 console.log("done");
                 progress.report({ message: "Installing...", increment: -100 });
                 try {
-                  
+
                   totalSize = fsExtra.statSync(tmpFilePath.fsPath).size;
                   currentSize = 0;
 
@@ -309,7 +309,7 @@ async function installStdLibs(config: Config, targetDevice: TargetInfo): Promise
                     throw err;
                   });
 
-                    unZipStream.pipe(unzip.Extract({ path: libsRootDirPath.fsPath })).on('finish', async () => {
+                  unZipStream.pipe(unzip.Extract({ path: libsRootDirPath.fsPath })).on('finish', async () => {
 
                     vscode.window.showInformationMessage(`STD libs have been successuly installed!`, ...['Ok']);
                     isTerminated = true;
@@ -446,8 +446,6 @@ export async function installToolchain(config: Config, toolchainInfo: ToolchainI
     let request: ClientRequest;
 
     let isTerminated = false;
-
-
 
     async function download(url: string | URL /*| https.RequestOptions*/, targetFile: fs.PathLike): Promise<boolean> {
       return new Promise((resolve, reject) => {
@@ -730,7 +728,7 @@ export async function installToolchain(config: Config, toolchainInfo: ToolchainI
     );
     fs.copyFileSync(toolchainInfoFile.fsPath, toolchainTmpInfoFile.fsPath);
 
-    setCurrentToolchain(config, toolchainInfo);
+    await setCurrentToolchain(config, toolchainInfo);
   }
 
   return result;
@@ -922,7 +920,7 @@ export async function setCurrentTarget(target: TargetInfo, config: Config, sbSel
 
 export async function checkAndSetCurrentToolchain(config: Config, sbSelectToolchain: vscode.StatusBarItem) {
 
-  const result = await checkToolchain(config);
+  const result = await checkToolchain(config, true, false);
   const currentToolchain = result ? config.currentToolchain : undefined;
 
   if (currentToolchain !== undefined && currentToolchain.label !== undefined) {
@@ -932,14 +930,15 @@ export async function checkAndSetCurrentToolchain(config: Config, sbSelectToolch
       sbSelectToolchain.tooltip += "(old version)";
     }
 
-    setCurrentToolchain(config, currentToolchain);
-  } else {
-    sbSelectToolchain.text = "Not installed!";
-    sbSelectToolchain.tooltip = "Select toolchain";
-
-    await config.setGlobal('toolchain.version', undefined);
+    await setCurrentToolchain(config, currentToolchain);
+    return true;
   }
 
+  sbSelectToolchain.text = "Not installed!";
+  sbSelectToolchain.tooltip = "Select toolchain";
+  await config.setGlobal('toolchain.version', undefined);
+
+  return false;
 }
 
 
@@ -1032,16 +1031,16 @@ export async function getToolchains(config: Config): Promise<ToolchainInfo[] | u
 
 export async function IsToolchainInstalled(config: Config): Promise<boolean> {
 
-  if (await checkToolchain(config)) {
+  if (await checkToolchain(config, false, true)) {
     return true;
   }
 
-  vscode.window.showErrorMessage(`EEmbLang Compiler is not installed! Can't find toolchain`, { modal: true });
+  await vscode.window.showErrorMessage(`EEPL Compiler is not installed! Can't find toolchain`, { modal: true });
   return false;
 }
 
 
-async function checkToolchain(config: Config): Promise<boolean> {
+async function checkToolchain(config: Config, isCheckLatest: boolean, isSyncCheckLatest: boolean): Promise<boolean> {
 
   const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
   const verFile = vscode.Uri.joinPath(
@@ -1060,20 +1059,9 @@ async function checkToolchain(config: Config): Promise<boolean> {
       if (!res) {
         vscode.window.showErrorMessage(`Error: EEmbLang Toolchain is not installed!\nCan't download file`);
       }
-      //await new Promise(f => setTimeout(f, 3000));
-      //await vscode.commands.executeCommand('eepl.command.setTargetDevice');
       return res;
     }
     return false;
-  }
-
-  if (config.latestToolchain !== undefined) {
-    return true;
-  }
-
-  const lastToolchain = await getLastToolchainInfo(config);
-  if (lastToolchain === undefined) {
-    return true;
   }
 
   if (config.currentToolchain === undefined) {
@@ -1081,13 +1069,39 @@ async function checkToolchain(config: Config): Promise<boolean> {
     config.currentToolchain = JSON.parse(raw) as ToolchainInfo;
   }
 
-  if (config.currentToolchain.ver != lastToolchain.ver) {
+  if (!isCheckLatest || config.latestToolchain !== undefined) {
+    return true;
+  }
+
+  const checkLatestToolchain = async () => {
+    const lastToolchain = await getLastToolchainInfo(config);
+
+    if (config.currentToolchain === undefined) {
+      return false;
+    }
+
+    if (lastToolchain === undefined) {
+      return true;
+    }
+
+    if (config.currentToolchain.ver == lastToolchain.ver) {
+      return true;
+    }
+
     let buttons = ['Install', 'Not now'];
     let choice = await vscode.window.showInformationMessage(`New  EEPL Toolchain (v${lastToolchain.ver}) is available!\nDo you want Download and Install now?`, ...buttons);
     if (choice === buttons[0]) {
       const res = await installToolchain(config, lastToolchain);
       return res;
     }
+
+    return true;
+  };
+
+  if (isSyncCheckLatest) {
+    return await checkLatestToolchain();
+  } else {
+    config.toolchainInstallerResult = checkLatestToolchain();
   }
 
   return true;

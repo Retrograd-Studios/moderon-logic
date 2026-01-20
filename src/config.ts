@@ -32,6 +32,8 @@ export class Config {
     isOldToolchain: boolean = false;
     isInternalLinker: boolean = false;
 
+    toolchainInstallerResult: Promise<boolean> = (async()=>false)();
+
     readonly rootSection = "eepl";
     // config: {
     //     description: string; devManId: number; devName: string; frameWorkVerA: number; frameWorkVerB: number; triplet: string;
