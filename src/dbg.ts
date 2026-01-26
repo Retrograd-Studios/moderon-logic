@@ -157,13 +157,6 @@ export async function runDebug(config: Config, isSimulator: boolean) {
 
     const gdbPath = vscode.Uri.joinPath(vscode.Uri.file(homeDir), '.ecc', 'bin', 'gdb');
 
-    // const task = new vscode.Task(
-    //   { type: 'eec', command: isSimulator ? 'simulate' : 'run' },
-    //   ws ?? vscode.TaskScope.Workspace,
-    //   isSimulator ? 'Run Simulator' : 'run',
-    //   'eepl',
-    //   new vscode.ProcessExecution(exePath.fsPath, dbgArgs2)
-    // );
 
     let debugConfig: vscode.DebugConfiguration =
     os.platform().toString() === 'win32' ?
@@ -244,14 +237,22 @@ export async function runDebug(config: Config, isSimulator: boolean) {
     cwd: "${workspaceFolder}",
     //svdFile: "./bin/target.svd",
     executable: progPath,
-    runToEntryPoint: "__entryPoint__",
+    // runToEntryPoint: "__entryPoint__",
     servertype: "external",
     //gdbPath: "C:/Users/YouTooLife_PC/.eec/out/build/bin/arm-none-eabi-gdb.exe",
     armToolchainPath: DirPathToArmToolchain,
     gdbPath: pathToArmToolchain,
     gdbTarget: `localhost:${gdbServerPort}`,
     //gdbTarget: "localhost:4242",
-    showDevDebugOutput: "raw"
+    showDevDebugOutput: "raw",
+    liveWatch : {
+      samplesPerSecond: 1,
+      enabled: true
+    },
+
+     liveWatchRefreshRate: "1000",
+     liveWatchEnabled: true,
+    demangle: true
     //preLaunchTask: "st-util"
   };
 

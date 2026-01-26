@@ -21,7 +21,7 @@ function flushBtnHandler() {
 		command: 'attach',
 		data: {
 			'portId': portId.value, 'baudRateId': baudRateId.value, 'parityId': parityId.value, 'stopBitsId': stopBitsId.value,
-			'serverPortId': serverPortId.value, 'baudRateGdbId': baudRateGdbId.value, 'parityGdbId': parityGdbId.value, 'stopBitsGdbId': stopBitsGdbId.value
+			'serverPortId': serverPortId.value, 'baudRateGdbId': baudRateGdbId.value, 'parityGdbId': parityGdbId.value, 'stopBitsGdbId': stopBitsGdbId.value 
 		}
 	});
 
