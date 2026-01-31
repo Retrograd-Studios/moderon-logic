@@ -1085,7 +1085,7 @@ async function checkToolchain(config: Config, isCheckLatest: boolean, isSyncChec
       return true;
     }
 
-    if (config.currentToolchain.ver == lastToolchain.ver) {
+    if (getVerToInt(config.currentToolchain.ver) >= getVerToInt(lastToolchain.ver)) {
       return true;
     }
 
