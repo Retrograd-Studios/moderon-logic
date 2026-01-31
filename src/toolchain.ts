@@ -761,20 +761,20 @@ export type TargetInfoOld = {
   periphInfo: TargetPeriphInfo;
 }
 
-
 export type TargetInfo = {
   description: string;
   devManId: number;
   devName: string;
   frameWorkVerA: number;
   frameWorkVerB: number;
+  frameworkSize: number;
+  periphInfo: TargetPeriphInfo;
   triplet: string;
   pathToFile: string;
   stdlibPath: string;
   stdlibUrl: string;
   linkArgs: string[];
   isAlfSupport: boolean;
-  periphInfo: TargetPeriphInfo;
 }
 
 export const targetInfoDefaultValue: TargetInfo = {
@@ -783,6 +783,7 @@ export const targetInfoDefaultValue: TargetInfo = {
   devName: "Select Target",
   frameWorkVerA: 0,
   frameWorkVerB: 0,
+  frameworkSize: 0,
   triplet: "thumbv7m-none-none-eabi",
   pathToFile: "",
   periphInfo: {
@@ -893,7 +894,7 @@ export async function checkAndSetCurrentTarget(config: Config, sbSelectTargetDev
   }
 
   //sbSelectTargetDev.text = `$(chip)[${sTarget.devName}]`;
-  setCurrentTarget(sTarget, config, sbSelectTargetDev);
+  await setCurrentTarget(sTarget, config, sbSelectTargetDev);
 
   resolveTarget(config);
 }
@@ -1176,7 +1177,6 @@ export async function resolveTarget(config: Config): Promise<boolean> {
   }
 
   const devName = config.targetDevice.devName;
-  const cwd = "${cwd}";
 
   const isOldToolchain = config.isOldToolchain;
 
@@ -1187,31 +1187,53 @@ export async function resolveTarget(config: Config): Promise<boolean> {
 
   if (!isOldToolchain) {
 
-    const compilerOutputPath = `${outputPath}/.eec_cache/EECompilerOutput.json`;
+    if (config.isInternalLinker) {
 
-    if (fs.existsSync(compilerOutputPath)) {
+      const packageInfoPath = `${workspaceTarget!.uri.fsPath}/PackageInfo.es`;
+      if (fs.existsSync(packageInfoPath)) {
 
-      const rowFile = fs.readFileSync(compilerOutputPath).toString();
-      const eecOutput: EECompilerOutput = JSON.parse(rowFile);
+        const rowFile = fs.readFileSync(packageInfoPath).toString();
 
-      productName = eecOutput.productName;
+        const regex = /\s*(BuildApp|BuildLib)\s*\(\s*(\S+)\s*\)/;
+        const dateString = rowFile;
+
+        const match = dateString.match(regex);
+        if (match) {
+          productName = match[2];
+        } else {
+          productName = "main";
+        }
+
+      } else {
+        productName = "main";
+      }
+
       productPath = `${productPath}/${productName}`;
 
     } else {
-      productPath = `${productPath}/output`;
-    }
+      const compilerOutputPath = `${outputPath}/.eec_cache/EECompilerOutput.json`;
 
+      if (fs.existsSync(compilerOutputPath)) {
+
+        const rowFile = fs.readFileSync(compilerOutputPath).toString();
+        const eecOutput: EECompilerOutput = JSON.parse(rowFile);
+
+        productName = eecOutput.productName;
+        productPath = `${productPath}/${productName}`;
+
+      } else {
+        productPath = `${productPath}/output`;
+      }
+    }
   }
 
   if (isOldToolchain) {
-
+    const cwd = "${cwd}";
     config.uploadingFilePath = `${cwd}/out/${devName}/prog.alf`;
     config.exePath = `${cwd}/out/${devName}/output.elf`;
     config.productPath = `${productPath}/output`;
     config.productName = productName;
-
-  }
-  else {
+  } else {
 
     config.uploadingFilePath = `${productPath}.alf`;
     config.productPath = `${productPath}`;
