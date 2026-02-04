@@ -177,6 +177,7 @@ export type ToolchainInfo = {
   description: string;
   ver: string;
   url: string;
+  api: number;
 }
 
 export type ToolchainsFile = {
@@ -402,6 +403,12 @@ async function installStdLibs(config: Config, targetDevice: TargetInfo): Promise
 
 
 export async function installToolchain(config: Config, toolchainInfo: ToolchainInfo): Promise<boolean> {
+
+  if (toolchainInfo.api !== undefined && config.api < toolchainInfo.api) {
+    await vscode.window.showErrorMessage(`The selected Toolchain requires v${toolchainInfo.api} API, but VSCode extension has v${config.api} API.
+Please update your VSCode extension for EEPL!`, {modal: true});
+      return false;
+  }
 
 
   let homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
