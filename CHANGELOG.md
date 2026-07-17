@@ -1,5 +1,11 @@
 # EEPL (Easy Embedded sytems Programming Language) Extension Changelog
 
+## Version 0.9.11: Jul 17, 2026
+* Add internal linker support 
+* Fix check updates for Toolchain and EEPL Packages
+* Add checking API version between VSCode ext and selected Toolchain
+* Add selecting package versions
+
 ## Version 0.9.10: December 23, 2024
 * Updated snippets
 
