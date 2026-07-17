@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
 import * as vscode from "vscode";
-import { execute, log, memoizeAsync } from "./util";
+import { log, memoizeAsync } from "./util";
 import * as fsExtra from 'fs-extra';
 import * as unzip from 'unzip-stream';
 
@@ -131,24 +131,6 @@ export class Easy {
       });
     });
   }
-}
-
-/** Mirrors `project_model::sysroot::discover_sysroot_dir()` implementation*/
-export async function getSysroot(dir: string): Promise<string> {
-  const easyPath = await getPathForExecutable("eec");
-
-  // do not memoize the result because the toolchain may change between runs
-  return await execute(`${easyPath} --print sysroot`, { cwd: dir });
-}
-
-export async function getEasyId(dir: string): Promise<string> {
-  const easyPath = await getPathForExecutable("eec");
-
-  // do not memoize the result because the toolchain may change between runs
-  const data = await execute(`${easyPath} -V -v`, { cwd: dir });
-  const rx = /commit-hash:\s(.*)$/m;
-
-  return rx.exec(data)![1];
 }
 
 /** Mirrors `toolchain::cargo()` implementation */
@@ -741,6 +723,7 @@ Please update your VSCode extension for EEPL!`, {modal: true});
   return result;
 }
 
+
 type TargetPeriphInfo = {
   aoCount: number;
   relayCount: number;
@@ -753,20 +736,6 @@ type TargetPeriphInfo = {
   isResourcesInternal: boolean;
 }
 
-export type TargetInfoOld = {
-  description: string;
-  devManId: number;
-  devName: string;
-  frameWorkVerA: number;
-  frameWorkVerB: number;
-  triplet: string;
-  pathToFile: string;
-  stdlib: string;
-  runtime: string;
-  stdlibs: string[];
-  includePaths: string[];
-  periphInfo: TargetPeriphInfo;
-}
 
 export type TargetInfo = {
   description: string;
@@ -783,6 +752,7 @@ export type TargetInfo = {
   linkArgs: string[];
   isAlfSupport: boolean;
 }
+
 
 export const targetInfoDefaultValue: TargetInfo = {
   description: "[Device]",
@@ -954,7 +924,7 @@ async function setCurrentToolchain(config: Config, toolchainInfo: ToolchainInfo)
   config.currentToolchain = toolchainInfo;
   const currentVer = getVerToInt(toolchainInfo.ver);
   config.isOldToolchain = currentVer < getVerToInt('0.9.0');
-  config.isInternalLinker = currentVer >= getVerToInt('0.9.25');
+  config.isInternalLinker = currentVer >= getVerToInt('0.9.25') || currentVer == getVerToInt('0.9.1');
 
   await config.setGlobal("toolchain.version", config.currentToolchain);
 }
@@ -970,7 +940,7 @@ async function getLastToolchainInfo(config: Config): Promise<ToolchainInfo | und
 
   let lastToolchain: ToolchainInfo | undefined = undefined;
 
-  const response = await fetch(`https://github.com/Retrograd-Studios/eemblangtoolchain/raw/master/toolchain_${config.hostTriplet}.json`).catch((e) => {
+  const response = await fetch(`${config.toolchainRepo}/toolchain_${config.hostTriplet}.json`).catch((e) => {
     console.log(e);
     return undefined;
   });
@@ -1001,7 +971,7 @@ export async function getToolchains(config: Config): Promise<ToolchainInfo[] | u
 
   let lastToolchain: ToolchainInfo | undefined = undefined;
 
-  const response = await fetch(`https://github.com/Retrograd-Studios/eemblangtoolchain/raw/master/toolchain_${config.hostTriplet}.json`).catch((e) => {
+  const response = await fetch(`${config.toolchainRepo}/toolchain_${config.hostTriplet}.json`).catch((e) => {
     console.log(e);
     return undefined;
   });

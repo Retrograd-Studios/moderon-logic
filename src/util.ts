@@ -159,20 +159,20 @@ export function memoizeAsync<Ret, TThis, Param extends string>(
 }
 
 /** Awaitable wrapper around `child_process.exec` */
-export function execute(command: string, options: ExecOptions): Promise<string> {
-    return new Promise((resolve, reject) => {
-        exec(command, options, (err, stdout, stderr) => {
-            if (err) {
-                reject(err);
-                return;
-            }
+// export function execute(command: string, options: ExecOptions): Promise<string> {
+//     return new Promise((resolve, reject) => {
+//         exec(command, options, (err, stdout, stderr) => {
+//             if (err) {
+//                 reject(err);
+//                 return;
+//             }
 
-            if (stderr) {
-                reject(new Error(stderr));
-                return;
-            }
+//             if (stderr) {
+//                 reject(new Error(stderr));
+//                 return;
+//             }
 
-            resolve(stdout.trimEnd());
-        });
-    });
-}
+//             resolve(stdout.trimEnd());
+//         });
+//     });
+// }

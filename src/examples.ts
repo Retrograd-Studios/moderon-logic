@@ -2,8 +2,8 @@
 
 import * as os from "os";
 import * as vscode from "vscode";
-import { checkToolchain } from "./toolchain";
 import { Config } from "./config";
+import { IsToolchainInstalled } from "./toolchain";
 
 
 export type ExampleInfo = {
@@ -16,10 +16,8 @@ export type ExampleInfo = {
 
 export async function getExamples(config: Config): Promise<ExampleInfo[]> {
 
-    const isFoundToolchain = await checkToolchain(config);
-    if (!isFoundToolchain)
-    {
-        vscode.window.showErrorMessage(`EEPL Compiler is not installed! Can't find toolchain`);
+    const isFoundToolchain = await IsToolchainInstalled(config);
+    if (!isFoundToolchain) {
         return [];
     }
 
@@ -156,10 +154,8 @@ export async function selectExamples(config: Config) {
 
 export async function createNewProject(config: Config) {
 
-    const isFoundToolchain = await checkToolchain(config);
-    if (!isFoundToolchain)
-    {
-        vscode.window.showErrorMessage(`EEPL Compiler is not installed! Can't find toolchain`);
+    const isFoundToolchain = await IsToolchainInstalled(config);
+    if (!isFoundToolchain) {
         return;
     }
 

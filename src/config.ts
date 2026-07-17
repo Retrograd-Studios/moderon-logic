@@ -16,6 +16,10 @@ export class Config {
     context: vscode.ExtensionContext;
 
     readonly extensionId = "Retrograd-Studios.moderon-logic";
+
+    readonly corePkgRepo = "https://github.com/Retrograd-Studios/eepl_vscode_ext_pkg_moderon/raw/main/versions.json";
+    readonly toolchainRepo = "https://github.com/Retrograd-Studios/eemblangtoolchain/raw/master";
+
     configureLang: vscode.Disposable | undefined;
 
     targetDevice: TargetInfo = targetInfoDefaultValue;

@@ -2,7 +2,6 @@ import * as vscode from "vscode";
 import * as toolchain from "./toolchain";
 import { Config } from "./config";
 import * as os from "os";
-import { log } from "./util";
 
 export const TASK_TYPE = "eec";
 export const TASK_SOURCE = "eepl";

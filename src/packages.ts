@@ -3,7 +3,6 @@ import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
 import * as vscode from "vscode";
-import { execute, log, memoizeAsync } from "./util";
 
 import * as fs from 'fs';
 import * as https from 'https';
@@ -18,8 +17,6 @@ import * as unzip from 'unzip-stream';
 import { Config } from "./config";
 
 
-
-
 export type PackageInfo = {
     pkgName: string;
     label: string;
@@ -28,6 +25,7 @@ export type PackageInfo = {
     description: string;
     ver: string;
     repo: string;
+    archive: string;
 }
 
 export type PackagesFile = {
@@ -40,24 +38,17 @@ export type PackageVersions = {
 }
 
 
-
-
-
-
 export async function installPackage(config: Config, packageInfo: PackageInfo): Promise<boolean> {
 
     const currentToolchain = await IsToolchainInstalled(config) ? config.currentToolchain : undefined;
-    if (currentToolchain === undefined)
-    {
+    if (currentToolchain === undefined) {
         return false;
     }
 
-    if (getVerToInt(currentToolchain.ver) < getVerToInt(packageInfo.toolchain))
-    {
-       await vscode.window.showErrorMessage(`The package ${packageInfo.pkgName}[${packageInfo.ver}] requires Toolchain ver. '${packageInfo.toolchain}' or greater`);
-       return false;
+    if (getVerToInt(currentToolchain.ver) < getVerToInt(packageInfo.toolchain)) {
+        await vscode.window.showErrorMessage(`The package ${packageInfo.pkgName}[${packageInfo.ver}] requires Toolchain ver. '${packageInfo.toolchain}' or greater`);
+        return false;
     }
-
 
     let homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
 
@@ -70,7 +61,6 @@ export async function installPackage(config: Config, packageInfo: PackageInfo): 
         vscode.Uri.file(homeDir),
         ".eec-tmp", `${packageInfo.file}.zip`
     );
-
 
     const toolchainDirPath = vscode.Uri.joinPath(
         vscode.Uri.file(homeDir)
@@ -103,142 +93,140 @@ export async function installPackage(config: Config, packageInfo: PackageInfo): 
 
         let isTerminated = false;
 
-
-
         async function download(url: string | URL /*| https.RequestOptions*/, targetFile: fs.PathLike): Promise<boolean> {
             return new Promise((resolve, reject) => {
-      
-      
-              request = https.get(url, /*{ headers: { responseType: 'arraybuffer'} } ,*/ response => {
-      
-                const code = response.statusCode ?? 0
-      
-                if (code >= 400) {
-                  isTerminated = true;
-                  reject(new Error(response.statusMessage));
-                }
-      
-                // handle redirects
-                if (code > 300 && code < 400 && !!response.headers.location) {
-                  resolve(download(response.headers.location, targetFile));
-                  return;
-                }
-      
-                totalSize = response.headers['content-length'] ? Number(response.headers['content-length']) : 1;
-                console.log(totalSize);
-      
-                response.on('data', (chunk) => {
-                  const buffer = chunk as Buffer;
-                  prevSize = currentSize;
-      
-                  if (totalSize == 1) {
-                    console.log("Compressed size:", buffer.readInt32LE(20));
-                    console.log("Uncompressed size:", buffer.readInt32LE(24));
-                    console.log("Extra field length:", buffer.readInt16LE(30));
-                    totalSize = 2;
-                  }
-                  //currentSize += 1024*1024;//buffer.byteLength;
-                  currentSize += buffer.byteLength;
-                });
-      
-                response.on('error', (err) => {
-                  console.log(err);
-                  isTerminated = true;
-                  resolve(false);
-                  response.unpipe();
-                });
-      
-      
-                try {
-      
-                  let isAborted = false;
-                  const fileWriter = fs.createWriteStream(targetFile, {})
-                    .on('finish', async () => {
-      
-      
-                      if (isAborted) {
-                        return;
-                      }
-      
-                      console.log("done");
-                      progress.report({ message: "Installing...", increment: -100 });
-                      try {
-      
-                        totalSize = fsExtra.statSync(tmpFilePath.fsPath).size;
-                        currentSize = 0;
-      
-                        const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: Buffer) => {
-                          const buffer = chunk as Buffer;
-                          currentSize += buffer.length;
-                        });
-      
-                        unZipStream.pipe(unzip.Extract({ path: toolchainDirPath.fsPath })).on('finish', () => {
-                          isTerminated = true;
-                        });
-      
-                      } catch (err) {
-                        console.log();
-                        (async () => {
-                          let buttons = ['Yes', 'No'];
-                          let choice = await vscode.window.showErrorMessage(`Invalid package archive!\nDo you want to delete this file?`, ...buttons);
-                          if (choice === buttons[0]) {
-                            fs.rm(tmpFilePath.fsPath, () => {
-                            });
-                          }
-                        })();
-                      }
-      
-                      progress.report({ message: "Installing...", increment: 100 });
-                      //isTerminated = true;
-                      resolve(true);
-      
-                    }).on('error', () => {
-                      console.log("err");
-                      isTerminated = true;
-                      resolve(false);
-                      fileWriter.close();
-                    }).on('unpipe', () => {
-                      isAborted = true;
-                      fileWriter.close();
-                    });
-      
-                  response.pipe(fileWriter);
-      
-                } catch (err) {
-                  console.log(err);
-                }
-      
-      
-              }).on('error', error => {
-                console.log(error);
-                isTerminated = true;
-                resolve(false);
-              }).setTimeout(10000).on('timeout', () => {
-                console.log("Request timeout");
-                isTerminated = true;
-                resolve(false);
-              });
-      
-              //resolve(true);
-            });
-          }
 
-        const result0 = !isExist ? download(packageInfo.repo, tmpFilePath.fsPath) : true;
+
+                request = https.get(url, /*{ headers: { responseType: 'arraybuffer'} } ,*/ response => {
+
+                    const code = response.statusCode ?? 0
+
+                    if (code >= 400) {
+                        isTerminated = true;
+                        reject(new Error(response.statusMessage));
+                    }
+
+                    // handle redirects
+                    if (code > 300 && code < 400 && !!response.headers.location) {
+                        resolve(download(response.headers.location, targetFile));
+                        return;
+                    }
+
+                    totalSize = response.headers['content-length'] ? Number(response.headers['content-length']) : 1;
+                    console.log(totalSize);
+
+                    response.on('data', (chunk) => {
+                        const buffer = chunk as Buffer;
+                        prevSize = currentSize;
+
+                        if (totalSize == 1) {
+                            console.log("Compressed size:", buffer.readInt32LE(20));
+                            console.log("Uncompressed size:", buffer.readInt32LE(24));
+                            console.log("Extra field length:", buffer.readInt16LE(30));
+                            totalSize = 2;
+                        }
+                        //currentSize += 1024*1024;//buffer.byteLength;
+                        currentSize += buffer.byteLength;
+                    });
+
+                    response.on('error', (err) => {
+                        console.log(err);
+                        isTerminated = true;
+                        resolve(false);
+                        response.unpipe();
+                    });
+
+
+                    try {
+
+                        let isAborted = false;
+                        const fileWriter = fs.createWriteStream(targetFile, {})
+                            .on('finish', async () => {
+
+
+                                if (isAborted) {
+                                    return;
+                                }
+
+                                console.log("done");
+                                progress.report({ message: "Installing...", increment: -100 });
+                                try {
+
+                                    totalSize = fsExtra.statSync(tmpFilePath.fsPath).size;
+                                    currentSize = 0;
+
+                                    const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: Buffer) => {
+                                        const buffer = chunk as Buffer;
+                                        currentSize += buffer.length;
+                                    });
+
+                                    unZipStream.pipe(unzip.Extract({ path: toolchainDirPath.fsPath })).on('finish', () => {
+                                        isTerminated = true;
+                                    });
+
+                                } catch (err) {
+                                    console.log();
+                                    (async () => {
+                                        let buttons = ['Yes', 'No'];
+                                        let choice = await vscode.window.showErrorMessage(`Invalid package archive!\nDo you want to delete this file?`, ...buttons);
+                                        if (choice === buttons[0]) {
+                                            fs.rm(tmpFilePath.fsPath, () => {
+                                            });
+                                        }
+                                    })();
+                                }
+
+                                progress.report({ message: "Installing...", increment: 100 });
+                                //isTerminated = true;
+                                resolve(true);
+
+                            }).on('error', () => {
+                                console.log("err");
+                                isTerminated = true;
+                                resolve(false);
+                                fileWriter.close();
+                            }).on('unpipe', () => {
+                                isAborted = true;
+                                fileWriter.close();
+                            });
+
+                        response.pipe(fileWriter);
+
+                    } catch (err) {
+                        console.log(err);
+                    }
+
+
+                }).on('error', error => {
+                    console.log(error);
+                    isTerminated = true;
+                    resolve(false);
+                }).setTimeout(10000).on('timeout', () => {
+                    console.log("Request timeout");
+                    isTerminated = true;
+                    resolve(false);
+                });
+
+                //resolve(true);
+            });
+        }
+
+        const result0 = !isExist ? download(packageInfo.archive, tmpFilePath.fsPath) : true;
 
         if (isExist) {
             progress.report({ message: "Installing...", increment: 25 });
-            
+
             try {
                 totalSize = fsExtra.statSync(tmpFilePath.fsPath).size;
 
                 const unZipStream = fsExtra.createReadStream(tmpFilePath.fsPath).on('data', (chunk: Buffer) => {
-                const buffer = chunk as Buffer;
-                currentSize += buffer.length;
+                    const buffer = chunk as Buffer;
+                    currentSize += buffer.length;
                 });
 
                 unZipStream.pipe(unzip.Extract({ path: toolchainDirPath.fsPath })).on('finish', () => {
                     isTerminated = true;
-                 });
+                });
             } catch (err) {
                 console.log();
                 (async () => {
@@ -251,7 +239,7 @@ export async function installPackage(config: Config, packageInfo: PackageInfo): 
                 })();
                 isTerminated = true;
             }
-           
+
         }
 
         token.onCancellationRequested(() => {
@@ -293,21 +281,35 @@ export async function installPackage(config: Config, packageInfo: PackageInfo): 
 }
 
 
-
-
-
-
 function getVerToInt(str: string): number {
     let nums = str.split('.', 3);
     return (parseInt(nums[0]) << 16) | (parseInt(nums[1]) << 8) | (parseInt(nums[2]));
 }
 
 
+export function checkAndFixPackageInfo(packageInfo: PackageInfo) {
+
+    if (packageInfo.archive !== undefined) {
+        return 
+    }
+
+    packageInfo.archive = packageInfo.repo;
+
+    let pkgRepo = packageInfo.repo;
+
+    const dotIndex = packageInfo.repo.lastIndexOf('.');
+    if (dotIndex != -1 && packageInfo.repo.substring(dotIndex) == ".zip") {
+        const rawIndex = packageInfo.repo.lastIndexOf("/raw/");
+        pkgRepo = packageInfo.repo.substring(0, rawIndex) + "/raw/main/versions.json";
+    }
+
+    packageInfo.repo = pkgRepo;
+}
 
 
-export async function checkPackageUpdate(packageInfo: PackageInfo): Promise<PackageInfo | undefined> {
+export async function getPackageVersions(packageInfo: PackageInfo) : Promise<PackageVersions | undefined> {
 
-    let lastPkg: PackageInfo | undefined = undefined;
+    checkAndFixPackageInfo(packageInfo);
 
     const response = await fetch(packageInfo.repo).catch((e) => {
         console.log(e);
@@ -318,21 +320,27 @@ export async function checkPackageUpdate(packageInfo: PackageInfo): Promise<Pack
         return undefined;
     }
 
-    // const tmp = `{
-    //     "versions": [
-    //         { "pkgName": "Moderon", "label": "[v0.9]", "file": "moderon_0.9", "description": "[latest version]", "ver": "0.9.1", "repo": "https://github.com/Retrograd-Studios/eepl_vscode_ext_pkg_moderon/raw/v0_9_1/.eec.zip"}
-    //     ]
-    // }`;
+    const packageVersions = await response.json() as PackageVersions;
 
-    // const data2 = JSON.parse(tmp) as PackageVersions;
-    // console.log(data2);
-    // const jdata2 = JSON.stringify(data2);
-    // console.log(jdata2);
+    for (const pkg of packageVersions.versions) {
+        checkAndFixPackageInfo(pkg);
+    }
 
-    console.log(response);
-    const data = await response.json() as PackageVersions;
+    return packageVersions;
+}
 
-    for (let pkg of data.versions) {
+
+export async function checkPackageUpdate(packageInfo: PackageInfo): Promise<PackageInfo | undefined> {
+
+    let lastPkg: PackageInfo | undefined = undefined;
+
+    const packageVersions = await getPackageVersions(packageInfo);
+
+    if (packageVersions === undefined) {
+        return undefined;
+    }
+
+    for (let pkg of packageVersions.versions) {
         if (lastPkg == undefined || getVerToInt(pkg.ver) > getVerToInt(lastPkg.ver)) {
             lastPkg = pkg;
         }
@@ -364,8 +372,8 @@ export async function checkPackageUpdate(packageInfo: PackageInfo): Promise<Pack
 
 }
 
-export async function isPackageInstalled(packageInfo: PackageInfo): Promise<boolean>
-{
+
+export async function isPackageInstalled(packageInfo: PackageInfo): Promise<boolean> {
     const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
 
     const packagePath = vscode.Uri.joinPath(
@@ -377,16 +385,14 @@ export async function isPackageInstalled(packageInfo: PackageInfo): Promise<bool
 }
 
 
-export async function getPackageInfo(origPackageInfo: PackageInfo): Promise<PackageInfo | undefined>
-{
+export async function getPackageInfo(origPackageInfo: PackageInfo): Promise<PackageInfo | undefined> {
     const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
 
     const packagePath = vscode.Uri.joinPath(
         vscode.Uri.file(homeDir), ".eec", "Packages", origPackageInfo.pkgName, "packageInfo.json");
 
     const isPackageFile = await isFileAtUri(packagePath);
-    if (!isPackageFile)
-    {
+    if (!isPackageFile) {
         return undefined;
     }
 
@@ -397,25 +403,28 @@ export async function getPackageInfo(origPackageInfo: PackageInfo): Promise<Pack
 }
 
 
-export async function checkPackages(config: Config) {
+export async function GetPackages(config: Config): Promise<PackagesFile> {
 
     const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
 
     const packagesPath = vscode.Uri.joinPath(
         vscode.Uri.file(homeDir), ".eepl-vscode-ext", "packages.json");
     const packagesDirPath = vscode.Uri.joinPath(
-            vscode.Uri.file(homeDir), ".eepl-vscode-ext");
+        vscode.Uri.file(homeDir), ".eepl-vscode-ext");
 
     const isPackagesFile = await isFileAtUri(packagesPath);
 
     if (!isPackagesFile) {
         const defaultPackages: PackagesFile = {
             packages: [
-                { pkgName: "Moderon", label: "[0.9.0]", file: "", toolchain: "0.1.0", description: "Moderon Controllers", ver: "0.9.0", 
-                repo: "https://github.com/Retrograd-Studios/eepl_vscode_ext_pkg_moderon/raw/main/versions.json" }
+                {
+                    pkgName: "Moderon", label: "[0.9.0]", file: "", toolchain: "0.1.0", description: "Moderon Controllers", ver: "0.9.0",
+                    repo: config.corePkgRepo,
+                    archive: ""
+                }
             ]
         };
-        const jDefaultPackages =  JSON.stringify(defaultPackages);
+        const jDefaultPackages = JSON.stringify(defaultPackages);
         if (!(await isDirAtUri(packagesDirPath))) {
             await vscode.workspace.fs.createDirectory(packagesDirPath).then(() => { }, () => {
                 console.log('Create dir error!');
@@ -430,6 +439,14 @@ export async function checkPackages(config: Config) {
 
     const raw = fs.readFileSync(packagesPath.fsPath).toString();
     const packagesFile = JSON.parse(raw) as PackagesFile;
+
+    return packagesFile;
+}
+
+
+export async function checkPackages(config: Config) {
+
+    const packagesFile = await GetPackages(config);
 
     var updates: Array<PackageInfo> = [];
 
@@ -472,5 +489,3 @@ export async function checkPackages(config: Config) {
     }
 
 }
-
-

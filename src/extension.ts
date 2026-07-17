@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as tasks from './tasks';
 import * as toolchain from './toolchain';
+import * as packages from './packages';
 
 import { Config } from "./config";
 import { activateTaskProvider, createTask } from "./tasks";
@@ -11,11 +12,11 @@ import { EasyConfigurationProvider, runDebug } from "./dbg";
 
 import * as os from "os";
 
-import { checkPackages } from './packages';
 import { createNewProject, selectExamples } from './examples';
 import { EFlasherClient } from './EFlasher/eflasher';
 import { EGDBServer } from './EGDB_Server/egdbServer';
 import { EEPLColorProvider } from './lsp/color_provider';
+import { PackageInfo } from './packages';
 
 
 let EEPL_stackOfCommands: string[] = []
@@ -66,7 +67,6 @@ export async function activate(context: vscode.ExtensionContext) {
   sbSelectTargetDev.show();
   toolchain.checkAndSetCurrentTarget(config, sbSelectTargetDev);
 
-  //const currentToolchain = await toolchain.getCurrentToolchain(); //config.get<string>('toolchain.version');
   let sbSelectToolchain: vscode.StatusBarItem;
   sbSelectToolchain = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 2);
   sbSelectToolchain.command = 'eepl.command.setToolchain';
@@ -74,6 +74,14 @@ export async function activate(context: vscode.ExtensionContext) {
   sbSelectToolchain.text = `$(extensions)`;
   sbSelectToolchain.tooltip = "Select toolchain";
   sbSelectToolchain.show();
+
+  let sbSelectPackage: vscode.StatusBarItem;
+  sbSelectPackage = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 2);
+  sbSelectPackage.command = 'eepl.command.packages';
+  context.subscriptions.push(sbSelectPackage);
+  sbSelectPackage.text = `$(package)`;
+  sbSelectPackage.tooltip = "Package settings";
+  sbSelectPackage.show();
 
   let sbSelectBuildPreset: vscode.StatusBarItem;
   sbSelectBuildPreset = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
@@ -117,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext) {
   (async () => {
     if( await toolchain.checkAndSetCurrentToolchain(config, sbSelectToolchain)) {
       await config.toolchainInstallerResult;
-      checkPackages(config);
+      packages.checkPackages(config);
     }
   })();
 
@@ -691,6 +699,109 @@ export async function activate(context: vscode.ExtensionContext) {
 
   });
 
+  vscode.commands.registerCommand('eepl.command.packages', async () => {
+
+    const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
+
+    let pickPackages: any[] = [];
+
+    const packagesFile = await packages.GetPackages(config);
+
+    for (var packageInfo of packagesFile.packages) {
+
+      const loclPkgPath = vscode.Uri.joinPath(
+            vscode.Uri.file(homeDir), ".eec", "Packages", packageInfo.pkgName, "packageInfo.json");
+
+      if (await toolchain.isFileAtUri(loclPkgPath)) {
+        const raw = fs.readFileSync(loclPkgPath.fsPath).toString();
+        packageInfo = JSON.parse(raw) as PackageInfo;
+      }
+
+      const detail = ` $(package) [v${packageInfo.ver}] ${packageInfo.description}`;
+      pickPackages.push({ label: packageInfo.pkgName, detail: detail, description: packageInfo.label, packageInfo: packageInfo });
+    }
+
+    pickPackages.push({ label: "Add", detail: "$(diff-added) add new package by repo url" });
+
+    const selectedPackage = await vscode.window.showQuickPick(
+      pickPackages,
+      { placeHolder: 'Select package or add new package', title: "Packages" }
+    );
+
+    if (!selectedPackage) {
+      return;
+    }
+
+    if (selectedPackage.label == "Add") {
+      const repoUrl = await vscode.window.showInputBox({
+            placeHolder: "Package's repo URL",
+            value: config.corePkgRepo,
+            title: "Input package's repo URL"
+      });
+
+      if (repoUrl === undefined) {
+        return;
+      }
+
+      return;
+    }
+
+    const packagesVersion = await packages.getPackageVersions(selectedPackage.packageInfo); 
+    if (packagesVersion === undefined) {
+      return;
+    }
+    
+    const installedPackagePath = vscode.Uri.joinPath(
+            vscode.Uri.file(homeDir), ".eec", "Packages", selectedPackage.packageInfo.pkgName, "packageInfo.json");
+    
+    let installedPackage: PackageInfo | undefined = undefined;
+    if (await toolchain.isFileAtUri(installedPackagePath)) {
+      const raw = fs.readFileSync(installedPackagePath.fsPath).toString();
+      installedPackage = JSON.parse(raw) as PackageInfo;
+    }
+
+    let pickPackageVerisons: any[] = [];
+
+    for (var packageInfo of packagesVersion.versions) {
+        const tmpFilePath = vscode.Uri.joinPath(
+          vscode.Uri.file(homeDir),
+          ".eec-tmp", `${packageInfo.file}.zip`
+        );
+
+        const isPicked = (installedPackage ? installedPackage.label == packageInfo.label : false);
+        const pickItem = isPicked ? '$(pass-filled)' : '$(circle-large-outline)';
+        const isLocal = (await toolchain.isFileAtUri(tmpFilePath));
+        const localItem = isLocal ? '$(folder-active)' : '$(cloud-download)';
+        const detail = ` ${pickItem}  $(info) [v${packageInfo.ver}] ${packageInfo.description} ${localItem}`;
+        pickPackageVerisons.push({ label: packageInfo.label, detail: detail, picked: isPicked, description: packageInfo.pkgName, packageInfo: packageInfo });
+    }
+
+    if (selectedPackage.packageInfo.pkgName != "Moderon") {
+      if (installedPackage) {
+        pickPackageVerisons.push({ label: "Disable", detail: "Disable package" });
+      }
+      pickPackageVerisons.push({ label: "Remove", detail: "Remove package repo" });
+    }
+
+    const selectedPkgVer = await vscode.window.showQuickPick(
+      pickPackageVerisons,
+      { placeHolder: 'Select package or add new package', title: "Packages" }
+    );
+
+    if (!selectedPkgVer) {
+      return;
+    }
+
+    if (selectedPkgVer.label == "Disable") {
+      return;
+    }
+
+    if (selectedPkgVer.label == "Remove") {
+      return;
+    }
+
+    await packages.installPackage(config, selectedPkgVer.packageInfo);
+  });
 
   vscode.commands.registerCommand('eepl.command.createNewProject', async () => {
     createNewProject(config);
