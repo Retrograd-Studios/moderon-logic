@@ -10,7 +10,7 @@
     },
     "publisher": "Retrograd-Studios",
     "engines": {
-        "vscode": "^1.75.0"
+        "vscode": "^1.108.1"
     },
     "keywords": [
         "eepl",
@@ -588,7 +588,6 @@
         "fs-extra": "^11.3.3",
         "node-fetch": "^3.3.2",
         "unzip-stream": "^0.3.4",
-        "@vscode/vsce": "^3.7.1",
         "vscode-languageclient": "^9.0.1"
     }
 }
