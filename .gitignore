@@ -12,3 +12,5 @@ node_modules/
 .vscode/launch.json
 .vscode/settings.json
 .vscode/tasks.json
+
+moderon-logic-*.vsix
