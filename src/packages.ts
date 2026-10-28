@@ -28,6 +28,7 @@ export type PackageInfo = {
     archive: string;
 }
 
+
 export type PackagesFile = {
     packages: PackageInfo[];
 }
@@ -35,6 +36,11 @@ export type PackagesFile = {
 
 export type PackageVersions = {
     versions: PackageInfo[];
+}
+
+
+export type PackageContent = {
+    contains: string[];
 }
 
 
@@ -290,7 +296,7 @@ function getVerToInt(str: string): number {
 export function checkAndFixPackageInfo(packageInfo: PackageInfo) {
 
     if (packageInfo.archive !== undefined) {
-        return 
+        return
     }
 
     packageInfo.archive = packageInfo.repo;
@@ -307,7 +313,7 @@ export function checkAndFixPackageInfo(packageInfo: PackageInfo) {
 }
 
 
-export async function getPackageVersions(packageInfo: PackageInfo) : Promise<PackageVersions | undefined> {
+export async function getPackageVersions(packageInfo: PackageInfo): Promise<PackageVersions | undefined> {
 
     checkAndFixPackageInfo(packageInfo);
 
@@ -407,10 +413,10 @@ export async function GetPackages(config: Config): Promise<PackagesFile> {
 
     const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
 
-    const packagesPath = vscode.Uri.joinPath(
-        vscode.Uri.file(homeDir), ".eepl-vscode-ext", "packages.json");
     const packagesDirPath = vscode.Uri.joinPath(
         vscode.Uri.file(homeDir), ".eepl-vscode-ext");
+
+    const packagesPath = vscode.Uri.joinPath(packagesDirPath, "packages.json");
 
     const isPackagesFile = await isFileAtUri(packagesPath);
 
@@ -441,6 +447,108 @@ export async function GetPackages(config: Config): Promise<PackagesFile> {
     const packagesFile = JSON.parse(raw) as PackagesFile;
 
     return packagesFile;
+}
+
+
+export async function DisablePackage(packageInfo: PackageInfo) {
+    const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
+
+    const toolchainPath = vscode.Uri.joinPath(vscode.Uri.file(homeDir), ".eec");
+
+    const packageContPath = vscode.Uri.joinPath(
+        toolchainPath, "Packages", packageInfo.pkgName, "contains.json");
+
+    if (!(await isFileAtUri(packageContPath))) {
+        vscode.window.showErrorMessage(`Can't find 'contains.json' file to disable package '${packageInfo.pkgName}'`);
+        return;
+    }
+
+    const raw = fs.readFileSync(packageContPath.fsPath).toString();
+    const packageContent = JSON.parse(raw) as PackageContent;
+
+    for (const file of packageContent.contains) {
+        fs.rmSync(vscode.Uri.joinPath(toolchainPath, file).fsPath, { recursive: true, force: true });
+    }
+
+    fs.rmSync(vscode.Uri.joinPath(toolchainPath, "Packages", packageInfo.pkgName).fsPath, { recursive: true, force: true });
+}
+
+
+export async function RemovePackage(config: Config, packageInfo: PackageInfo) {
+    await DisablePackage(packageInfo);
+
+    const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
+
+    const packagesDirPath = vscode.Uri.joinPath(
+        vscode.Uri.file(homeDir), ".eepl-vscode-ext");
+
+    const packagesPath = vscode.Uri.joinPath(packagesDirPath, "packages.json");
+
+    const packages = await GetPackages(config);
+
+    const index = packages.packages.findIndex((pkg) => pkg.pkgName === packageInfo.pkgName);
+    if (index === -1) {
+        vscode.window.showErrorMessage(`[UNKNOWN ERR]: Can't find '${packageInfo.pkgName}' package in list`);
+        return;
+    }
+
+    packages.packages.splice(index, 1);
+
+    const jPackages = JSON.stringify(packages);
+    try {
+        fs.writeFileSync(packagesPath.fsPath, jPackages);
+    } catch (e: any) {
+        console.log(e);
+    }
+}
+
+
+export async function InstallPackageByUrl(config: Config, url: string) {
+    const homeDir = os.type() === "Windows_NT" ? os.homedir() : os.homedir();
+
+    const packagesDirPath = vscode.Uri.joinPath(
+        vscode.Uri.file(homeDir), ".eepl-vscode-ext");
+
+    const packagesPath = vscode.Uri.joinPath(packagesDirPath, "packages.json");
+
+    const packages = await GetPackages(config);
+
+    const index = packages.packages.findIndex((pkg) => pkg.repo === url);
+    if (index !== -1) {
+        vscode.window.showErrorMessage(`This repository has been already added! URL: ${url}`);
+        return;
+    }
+
+    const packageInfo: PackageInfo = {
+        pkgName: "",
+        label: "",
+        file: "",
+        toolchain: "",
+        description: "",
+        ver: "",
+        repo: url,
+        archive: ""
+    };
+
+    const latestPkg = await checkPackageUpdate(packageInfo);
+    if (latestPkg === undefined) {
+        vscode.window.showErrorMessage(`This is not a package! URL: ${url}`);
+        return;
+    }
+
+    if (!(await installPackage(config, latestPkg))) {
+        vscode.window.showErrorMessage(`The package '${latestPkg.pkgName}' has been not installed.`);
+        return;
+    }
+
+    packages.packages = packages.packages.concat(latestPkg);
+
+    const jPackages = JSON.stringify(packages);
+    try {
+        fs.writeFileSync(packagesPath.fsPath, jPackages);
+    } catch (e: any) {
+        console.log(e);
+    }
 }
 
 

@@ -743,6 +743,8 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      await packages.InstallPackageByUrl(config, repoUrl);
+
       return;
     }
 
@@ -778,9 +780,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     if (selectedPackage.packageInfo.pkgName != "Moderon") {
       if (installedPackage) {
-        pickPackageVerisons.push({ label: "Disable", detail: "Disable package" });
+        pickPackageVerisons.push({ label: "Disable", detail: "Disable package", packageInfo: selectedPackage.packageInfo });
       }
-      pickPackageVerisons.push({ label: "Remove", detail: "Remove package repo" });
+      pickPackageVerisons.push({ label: "Remove", detail: "Remove package repo", packageInfo: selectedPackage.packageInfo });
     }
 
     const selectedPkgVer = await vscode.window.showQuickPick(
@@ -793,10 +795,12 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     if (selectedPkgVer.label == "Disable") {
+      packages.DisablePackage(selectedPkgVer.packageInfo);
       return;
     }
 
     if (selectedPkgVer.label == "Remove") {
+      packages.RemovePackage(config, selectedPkgVer.packageInfo);
       return;
     }
 
