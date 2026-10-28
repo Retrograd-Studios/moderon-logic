@@ -1,5 +1,8 @@
 # EEPL (Easy Embedded sytems Programming Language) Extension Changelog
 
+## Version 0.9.12: Oct 28, 2026
+* Add support for disable/remove custom packages and add repo by URL
+
 ## Version 0.9.11: Jul 17, 2026
 * Add internal linker support 
 * Fix check updates for Toolchain and EEPL Packages
